@@ -1,0 +1,59 @@
+version: '3'
+
+vars:
+  NVIM_VERSION: v0.11.4
+  MOD_SRC: '{{.HOME}}/.claude/dev-mods/b3ead698-9028-4b81-b593-b1d24b55215a/gotutor'
+
+tasks:
+  default:
+    cmds: [task --list]
+    silent: true
+
+  start:
+    desc: Start (or attach to) a tmux session running Claude Code in this repo
+    cmds:
+      - tmux new-session -A -s gotutor -c {{.ROOT_DIR}} claude
+
+  test:
+    desc: 'Run a lesson''s tests with the race detector (task test -- lessons/01-foo)'
+    cmds:
+      - go test -race -count=1 -timeout 20s -v ./{{.CLI_ARGS | default "lessons/..."}}
+
+  edit:
+    desc: 'Open the tutor editor on a lesson (task edit -- lessons/01-foo)'
+    cmds:
+      - editor/tutor-editor.sh open {{.CLI_ARGS}}
+
+  editor:status:
+    desc: Show how the tutor editor is attached
+    cmds:
+      - editor/tutor-editor.sh status
+
+  vet:
+    desc: go vet every lesson
+    cmds:
+      - go vet ./lessons/...
+
+  nvim:install:
+    desc: Install Neovim {{.NVIM_VERSION}} to ~/.local (no sudo)
+    cmds:
+      - mkdir -p {{.HOME}}/.local/bin {{.HOME}}/.local/opt
+      - curl -fsSL -o /tmp/nvim.tar.gz https://github.com/neovim/neovim/releases/download/{{.NVIM_VERSION}}/nvim-linux-x86_64.tar.gz
+      - rm -rf {{.HOME}}/.local/opt/nvim-linux-x86_64
+      - tar -xzf /tmp/nvim.tar.gz -C {{.HOME}}/.local/opt
+      - ln -sf {{.HOME}}/.local/opt/nvim-linux-x86_64/bin/nvim {{.HOME}}/.local/bin/nvim
+      - rm -f /tmp/nvim.tar.gz
+      - '{{.HOME}}/.local/bin/nvim --version | head -1'
+
+  mod:check:
+    desc: Validate and test the gotutor Claude Code mod
+    dir: '{{.MOD_SRC}}'
+    cmds:
+      - claude plugin validate .
+      - claude plugin test .
+
+  mod:install:
+    desc: Copy the gotutor mod into this project so every session here loads it
+    cmds:
+      - mkdir -p .claude/skills
+      - rsync -a --delete --exclude .claude-plugin/types {{.MOD_SRC}}/ .claude/skills/gotutor/

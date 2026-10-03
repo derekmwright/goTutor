@@ -1,0 +1,50 @@
+" goTutor Vim fallback (used when Neovim is not installed). Plugin-free.
+" Loaded with `vim -u editor/vimrc`, so it never touches your own config.
+"
+"   <Space>t   go test (race, verbose) for this lesson
+"   <Space>r   go run .
+"   <Space>v   go vet -> quickfix
+"   <Space>n   jump to the next TODO(you)
+"   K          go doc for the word under the cursor
+"   gofmt runs on save; a file that does not parse is left alone.
+
+set nocompatible
+filetype plugin indent on
+syntax on
+let mapleader = ' '
+set number relativenumber signcolumn=yes mouse=a
+set noswapfile autoread updatetime=300 splitright scrolloff=5
+set laststatus=2 hlsearch incsearch
+set statusline=\ goTutor\ │\ %f\ %m%=%l:%c\
+set background=dark
+silent! colorscheme habamax
+
+highlight TutorTodo ctermfg=0 ctermbg=214 cterm=bold guifg=#000000 guibg=#ffaf00
+augroup gotutor
+  autocmd!
+  autocmd FileType go setlocal noexpandtab tabstop=4 shiftwidth=4 keywordprg=go\ doc
+  autocmd BufWinEnter *.go call matchadd('TutorTodo', 'TODO(you)')
+  autocmd FocusGained,BufEnter,CursorHold * silent! checktime
+  autocmd BufWritePre *.go call s:GoFmt()
+augroup END
+
+function! s:GoFmt() abort
+  let l:out = systemlist('gofmt', getline(1, '$'))
+  if v:shell_error
+    echohl WarningMsg | echo 'gofmt: ' . join(l:out[:2], ' ') | echohl None
+    return
+  endif
+  if l:out !=# getline(1, '$')
+    let l:view = winsaveview()
+    silent keepjumps call setline(1, l:out)
+    if line('$') > len(l:out)
+      silent execute (len(l:out) + 1) . ',$delete _'
+    endif
+    call winrestview(l:view)
+  endif
+endfunction
+
+nnoremap <leader>t :wall<CR>:botright terminal ++rows=12 ++shell cd %:p:h && go test -race -count=1 -timeout 20s -v .<CR>
+nnoremap <leader>r :wall<CR>:botright terminal ++rows=12 ++shell cd %:p:h && go run .<CR>
+nnoremap <leader>v :wall<CR>:compiler go<CR>:let &l:makeprg = 'go -C ' . expand('%:p:h') . ' vet .'<CR>:make!<CR>:cwindow<CR>
+nnoremap <leader>n /TODO(you)<CR>
