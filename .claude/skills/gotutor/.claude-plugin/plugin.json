@@ -1,0 +1,7 @@
+{
+  "name": "gotutor",
+  "version": "0.1.0",
+  "description": "Interactive Go tutor: lesson band, test watcher, and an editor split driven from Claude",
+  "author": { "name": "Derek Wright", "email": "derekmwright@gmail.com" },
+  "types": "./types/index.d.ts"
+}
