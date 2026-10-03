@@ -1,3 +1,4 @@
 *.test
 *.out
 /bin/
+.claude/skills/*/.claude-plugin/types/
