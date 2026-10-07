@@ -167,7 +167,9 @@ export const register: Register = on => {
   })
 
   on('tool.call', { tool: 'mcp__gotutor__start_lesson' }, async ($, e) => {
-    const input = e.input as Partial<Lesson> & { openEditor?: boolean }
+    // A registered tool's arguments arrive as fields of e itself (beside tool and
+    // tool_use_id), not under e.input.
+    const input = e as unknown as Partial<Lesson> & { openEditor?: boolean }
     if (!input.dir || !(await $.fs.exists(input.dir))) {
       return { result: `Lesson folder ${input.dir} does not exist yet: scaffold it first.` }
     }
@@ -205,7 +207,7 @@ export const register: Register = on => {
   })
 
   on('tool.call', { tool: 'mcp__gotutor__editor' }, async ($, e) => {
-    const input = e.input as { action: string; file?: string; line?: number; percent?: number }
+    const input = e as unknown as { action: string; file?: string; line?: number; percent?: number }
     if (input.action === 'open') return { result: (await openEditor($)).text }
     const args = [input.action]
     if (input.action === 'goto') args.push(input.file ?? '', String(input.line ?? 1))
@@ -216,7 +218,7 @@ export const register: Register = on => {
   on('tool.call', { tool: 'mcp__gotutor__finish_lesson' }, async ($, e) => {
     const current = await read($, lesson)
     if (!current) return { result: 'No lesson is active.' }
-    const notes = String((e.input as { notes?: string }).notes ?? '')
+    const notes = String((e as unknown as { notes?: string }).notes ?? '')
     const history = ((await $.store.get('history')) as unknown[] | undefined) ?? []
     await $.store.set('history', [...history, { ...current, notes, finishedAt: await $.clock.now() }])
     await $.store.delete('lesson')

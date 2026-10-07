@@ -2,7 +2,11 @@ version: '3'
 
 vars:
   NVIM_VERSION: v0.11.4
-  MOD_SRC: '{{.HOME}}/.claude/dev-mods/b3ead698-9028-4b81-b593-b1d24b55215a/gotutor'
+  # The mod's source of truth is the copy committed in this repo. MOD_SRC is only
+  # for an author developing it elsewhere (e.g. a `claude --plugin-dir` working
+  # copy or ~/.claude/dev-mods/...): `task mod:sync` copies it back in.
+  MOD_DIR: .claude/skills/gotutor
+  MOD_SRC: '{{.MOD_SRC | default ""}}'
 
 tasks:
   default:
@@ -29,10 +33,26 @@ tasks:
     cmds:
       - editor/tutor-editor.sh status
 
-  vet:
-    desc: go vet every lesson
+  drill:
+    desc: 'Reset a drill to its blank stub, open it, start the clock (task drill -- merge)'
     cmds:
-      - go vet ./lessons/...
+      - drills/drill.sh start {{.CLI_ARGS}}
+
+  drill:check:
+    desc: 'Test a drill under -race; on pass, log your time (task drill:check -- merge)'
+    cmds:
+      - drills/drill.sh check {{.CLI_ARGS}}
+
+  drill:list:
+    desc: List drills with attempts, last date, last and best time
+    cmds:
+      - drills/drill.sh list
+    silent: true
+
+  vet:
+    desc: go vet every lesson and drill
+    cmds:
+      - go vet ./lessons/... ./drills/...
 
   nvim:install:
     desc: Install Neovim {{.NVIM_VERSION}} to ~/.local (no sudo)
@@ -47,13 +67,15 @@ tasks:
 
   mod:check:
     desc: Validate and test the gotutor Claude Code mod
-    dir: '{{.MOD_SRC}}'
+    dir: '{{.MOD_DIR}}'
     cmds:
       - claude plugin validate .
       - claude plugin test .
 
-  mod:install:
-    desc: Copy the gotutor mod into this project so every session here loads it
+  mod:sync:
+    desc: 'Author only: copy a mod working copy into the repo (MOD_SRC=path task mod:sync)'
+    preconditions:
+      - sh: test -n "{{.MOD_SRC}}" && test -d "{{.MOD_SRC}}/hooks"
+        msg: 'set MOD_SRC to the mod working copy, e.g. MOD_SRC=~/.claude/dev-mods/<id>/gotutor'
     cmds:
-      - mkdir -p .claude/skills
-      - rsync -a --delete --exclude .claude-plugin/types {{.MOD_SRC}}/ .claude/skills/gotutor/
+      - rsync -a --delete --exclude .claude-plugin/types {{.MOD_SRC}}/ {{.MOD_DIR}}/

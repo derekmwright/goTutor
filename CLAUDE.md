@@ -69,6 +69,28 @@ the tests and Claude's review close the loop.
 If the gotutor mod isn't loaded (the tools don't exist), do the same workflow by
 hand: `task test -- lessons/NN-slug` and `task edit -- lessons/NN-slug file.go`.
 
+## Warm-up drills
+
+**Start every session with a warm-up**, before any new material: pick 1-2
+drills from `drills/` and run `task drill -- <name>` (resets the stub, opens
+the editor, starts the clock). The student checks with
+`task drill:check -- <name>`, which logs passes to `drills/log.tsv`.
+
+- **Pick what's due** with `task drill:list`: never attempted, the "revisit"
+  items in `PROGRESS.md`, slowest times, longest since last attempt. Say in
+  one line why you picked it.
+- **Pure recall.** No hints, no pointing, no reading the spec back to them
+  unless they ask. If they ask, use the hint ladder as usual. Never write a
+  drill solution into `drill.go`, and never keep reference solutions in the
+  repo (verify new drill tests with `go test -overlay` and a file outside it).
+- **After a pass,** a two-line review (one good thing, one sharper idiom if
+  any), then move on. Don't turn a drill into a lesson.
+- **After each lesson,** add 2-3 drills for its core patterns: a
+  `drill.go.stub` (signature + one-line spec + zero-value body that
+  compiles), the same file as `drill.go`, a `drill_test.go` (synctest, leak
+  checks; helpers in `drills/internal/chantest`), and a row in
+  `drills/README.md`.
+
 ## The editor
 
 The student edits in Neovim (fallback: Vim) opened beside Claude Code:
@@ -91,9 +113,10 @@ Space: `<Space>t` test, `<Space>r` run, `<Space>v` vet, `<Space>n` next TODO.
 
 ## The gotutor mod
 
-A Claude Code mod (function-hooks plugin). Source:
-`~/.claude/dev-mods/b3ead698-9028-4b81-b593-b1d24b55215a/gotutor/`; `task mod:install` copies it to
-`.claude/skills/gotutor/` so every session in this repo loads it.
+A Claude Code mod (function-hooks plugin) that lives in
+`.claude/skills/gotutor/`, so every session in this repo loads it; nothing to
+install. (An author hacking on it elsewhere with `claude --plugin-dir` copies it
+back with `MOD_SRC=<path> task mod:sync`.)
 
 - Tools for you: `start_lesson`, `run_tests`, `editor`, `finish_lesson`
   (as `mcp__gotutor__*`).
@@ -104,7 +127,8 @@ A Claude Code mod (function-hooks plugin). Source:
 - A watcher re-runs `go test -race` when a lesson's `.go` files change.
 - `/hint` and `/review` arrive as ordinary student prompts; treat them as such.
 
-`task mod:check` validates and tests it.
+`task mod:check` validates and tests it. After changing it, run
+`/reload-plugins` in the session (installed mods don't hot-reload).
 
 ## Commands
 
@@ -112,7 +136,8 @@ A Claude Code mod (function-hooks plugin). Source:
 - `task test -- lessons/NN-slug`: `go test -race -count=1 -timeout 20s -v`
 - `task edit -- lessons/NN-slug file.go`: open the editor on a lesson
 - `task nvim:install`: install Neovim to `~/.local` (Vim is the fallback)
-- `task vet`, `task mod:check`, `task mod:install`
+- `task drill -- name`, `task drill:check -- name`, `task drill:list`: warm-up drills
+- `task vet`, `task mod:check`, `task mod:sync`
 
 Use the Taskfile for project tasks; don't add a Makefile.
 
@@ -142,4 +167,5 @@ go.mod             module gotutor, Go 1.25
 PROGRESS.md        lessons completed and notes (tutor keeps it current)
 editor/            tutor-editor.sh launcher/driver, init.lua, vimrc
 lessons/NN-slug/   one folder per lesson
+drills/            pure-recall warm-up katas, drill.sh, log.tsv
 ```

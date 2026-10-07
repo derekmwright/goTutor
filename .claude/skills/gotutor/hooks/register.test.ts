@@ -53,7 +53,8 @@ test('start_lesson records the lesson, runs tests and draws the band', async ($,
 
   const res = await $.tool.call({
     tool: 'mcp__gotutor__start_lesson',
-    input: { dir: 'lessons/01-fan', title: 'Fan-in', objectives: ['merge channels'], files: ['fan.go'] },
+    // Arguments ride on the call itself, as the engine sends them: no input wrapper.
+    dir: 'lessons/01-fan', title: 'Fan-in', objectives: ['merge channels'], files: ['fan.go'],
   })
   expect(String(res.result)).toContain('Lesson "Fan-in" started')
   expect(String(res.result)).toContain('✗ 1/2 tests')
@@ -92,7 +93,7 @@ test('commands and the band send their prompts to the model', async ($, on) => {
 
   await $.tool.call({
     tool: 'mcp__gotutor__start_lesson',
-    input: { dir: 'lessons/01-fan', title: 'Fan-in', objectives: [], files: [], openEditor: false },
+    dir: 'lessons/01-fan', title: 'Fan-in', objectives: [], files: [], openEditor: false,
   })
   const ui = await $.ui.mount({ plugin: 'gotutor', surface: 'terminal', component: 'AbovePrompt', props: BAND_PROPS })
   await ui.press({ key: 'review' })

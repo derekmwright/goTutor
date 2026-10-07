@@ -2,3 +2,5 @@
 *.out
 /bin/
 .claude/skills/*/.claude-plugin/types/
+drills/.state/
+drills/log.tsv
